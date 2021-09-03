@@ -15,15 +15,17 @@ void destroy_ncurses();
 
 void init_windows();
 
-void t_print_rules(WINDOW *win);
+void print_rules(WINDOW *win);
 
 void game();
 
-void restart_game(tetris_game *game);
+void restart_game(tetris_game *game, tetris_block *block);
 
-void stop_game(tetris_game *game);
+void unpause_game(tetris_game *game, tetris_block *block);
 
-void show_menu(tetris_game *game);
+void stop_game(tetris_game *game, tetris_block *block);
+
+void show_menu(tetris_game *game, tetris_block *block, t_menu_item *m_items, int items_n);
 
 void msleep(int milliseconds);
 
@@ -46,6 +48,18 @@ void game() {
     tetris_game *t_game = t_init();
     tetris_block *t_block = t_init_block();
     int ticks = 0;
+
+    int m_gameover_items_n = 2;
+    t_menu_item m_gameover_items[] = {
+        {" play again ", restart_game},
+        {"    exit    ", stop_game}
+    };
+    int m_pause_items_n = 3;
+    t_menu_item m_pause_items[] = {
+        {"   resume   ", unpause_game},
+        {" play again ", restart_game},
+        {"    exit    ", stop_game}
+    };
 
     t_reset_block(t_block, t_game);
     t_draw_block(tw_main, t_block);
@@ -75,12 +89,10 @@ void game() {
                 break;
         }
         if (paused) {
-            mvwprintw(tw_main, NUM_OF_ROWS / 2 - 1, NUM_OF_COLS * COLS_PER_ROW / 2 - 2, "PAUSE");
-            wrefresh(tw_main);
-            continue;
+            show_menu(t_game, t_block, m_pause_items, m_pause_items_n);
         }
         if (game_over) {
-            show_menu(t_game);
+            show_menu(t_game, t_block, m_gameover_items, m_gameover_items_n);
         }
         ticks++;
         if (ticks >= t_game->tick_period / SLEEP_PERIOD) {
@@ -148,29 +160,24 @@ void init_windows() {
     wrefresh(tw_main);
     wrefresh(tw_next);
     wrefresh(tw_score);
-    t_print_rules(tw_rules);
+    print_rules(tw_rules);
     wrefresh(tw_rules);
 }
 
-void show_menu(tetris_game *game) {
+void show_menu(tetris_game *game, tetris_block *block, t_menu_item *m_items, int items_n) {
     int active = 1;
     nodelay(stdscr, FALSE);
-    t_menu_item m_items[] = {
-        {" play again ", restart_game},
-        {"    exit    ", stop_game}
-    };
-    WINDOW *tw_menu = newwin(4, 14, NUM_OF_ROWS / 2 - 4, NUM_OF_COLS * COLS_PER_ROW / 2 - 6);
-    int n_menu_items = sizeof(m_items) / sizeof(m_items[0]);
-    ITEM **items = (ITEM **) calloc(n_menu_items + 1, sizeof(ITEM *));
-    for (int i = 0; i < n_menu_items; ++i) {
+    WINDOW *tw_menu = newwin(items_n + 2, 14, NUM_OF_ROWS / 2 - 4, NUM_OF_COLS * COLS_PER_ROW / 2 - 6);
+    ITEM **items = (ITEM **) calloc(items_n + 1, sizeof(ITEM *));
+    for (int i = 0; i < items_n; ++i) {
         items[i] = new_item(m_items[i].title, NULL);
         set_item_userptr(items[i], m_items[i].usr_ptr);
     }
-    items[n_menu_items] = (ITEM *) NULL;
+    items[items_n] = (ITEM *) NULL;
     MENU *menu = new_menu(items);
     keypad(tw_menu, TRUE);
     set_menu_win(menu, tw_menu);
-    set_menu_sub(menu, derwin(tw_menu, n_menu_items, 12, 1, 1));
+    set_menu_sub(menu, derwin(tw_menu, items_n, 12, 1, 1));
     set_menu_mark(menu, "");
     box(tw_menu, 0, 0);
     refresh();
@@ -186,11 +193,8 @@ void show_menu(tetris_game *game) {
                 menu_driver(menu, REQ_UP_ITEM);
                 break;
             case 10: { // Enter key pressed
-                ITEM *cur;
-                cur = current_item(menu);
-                void (*p)(tetris_game *);
-                p = item_userptr(cur);
-                p(game);
+                ITEM *cur = current_item(menu);
+                ((void (*)(tetris_game *, tetris_block *block)) item_userptr(cur))(game, block);
                 pos_menu_cursor(menu);
                 active = 0;
                 break;
@@ -208,17 +212,24 @@ void show_menu(tetris_game *game) {
     nodelay(stdscr, TRUE);
 }
 
-void stop_game(tetris_game *game) {
-    running = 0;
-}
-
-void restart_game(tetris_game *game) {
+void restart_game(tetris_game *game, tetris_block *block) {
     t_reset_game(game);
+    t_reset_block(block, game);
+    t_draw_next_block(tw_next, game);
     game_over = 0;
+    paused = 0;
     running = 1;
 }
 
-void t_print_rules(WINDOW *win) {
+void unpause_game(tetris_game *game, tetris_block *block) {
+    paused = 0;
+}
+
+void stop_game(tetris_game *game, tetris_block *block) {
+    running = 0;
+}
+
+void print_rules(WINDOW *win) {
     mvwprintw(win, 1, 1, "q: quit");
     mvwprintw(win, 2, 1, "space: pause");
 }

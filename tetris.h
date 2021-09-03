@@ -1,8 +1,6 @@
 #ifndef TETRIS_TETRIS_H
 #define TETRIS_TETRIS_H
 
-#include <curses.h>
-
 #define COLS_PER_ROW 2
 #define NUM_OF_SHAPES 7
 #define NUM_OF_ORIENTATIONS 4
@@ -14,7 +12,7 @@
 #define SLEEP_PERIOD 10
 #define SCORE_PER_LINE 10
 #define LEVEL_MODIFIER 10
-#define LEVEL_PERIOD 10
+#define LEVEL_PERIOD 30
 #define MAX_LEVEL 10
 
 typedef enum {
