@@ -53,6 +53,8 @@ typedef struct {
 
 tetris_game *t_init();
 
+void t_reset_game(tetris_game *game);
+
 void t_init_colors();
 
 void t_destroy(tetris_game *game);

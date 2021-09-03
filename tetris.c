@@ -82,6 +82,20 @@ tetris_game *t_init() {
     return game;
 }
 
+void t_reset_game(tetris_game *game) {
+    for (int i = 0; i < NUM_OF_ROWS; i++) {
+        for (int j = 0; j < NUM_OF_COLS; j++) {
+            game->board[i][j] = BC_NONE;
+        }
+    }
+    game->level = 1; // can not be 0
+    game->score = 0;
+    game->tick_period = TICK_PERIOD;
+    game->next_shape = t_random_shape();
+    game->next_orientation = t_random_orientation();
+    game->next_color = t_random_color();
+}
+
 void t_init_colors() {
     init_pair(BC_RED, COLOR_RED, COLOR_BLACK);
     init_pair(BC_WHITE, COLOR_WHITE, COLOR_BLACK);
@@ -209,6 +223,12 @@ void t_move_block_right(tetris_block *block, tetris_game *game) {
 
 void t_rotate_block(tetris_block *block, tetris_game *game) {
     int orientation = (block->orientation + 1) % NUM_OF_ORIENTATIONS;
+    tetris_cell *cells = SHAPES[block->shape][orientation];
+    int shifted_down = 0;
+    if (block->y + cells->y < 0) {
+        shifted_down = 1;
+        block->y++;
+    }
     if (t_is_block_fits(block, orientation, game)) {
         block->orientation = orientation;
         return;
@@ -223,7 +243,18 @@ void t_rotate_block(tetris_block *block, tetris_game *game) {
         block->orientation = orientation;
         return;
     }
-    block->x += COLS_PER_ROW;
+    block->x += 3 * COLS_PER_ROW;
+    if (t_is_block_fits(block, orientation, game)) {
+        block->orientation = orientation;
+        return;
+    }
+    block->x -= 4 * COLS_PER_ROW;
+    if (t_is_block_fits(block, orientation, game)) {
+        block->orientation = orientation;
+        return;
+    }
+    block->x += 2 * COLS_PER_ROW;
+    if (shifted_down) { block->y--; }
 }
 
 int t_is_block_fits(tetris_block *block, int orientation, tetris_game *game) {
