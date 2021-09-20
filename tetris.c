@@ -347,6 +347,46 @@ void t_destroy_block(tetris_block *block) {
     free(block);
 }
 
+void t_save_game(tetris_game *game, tetris_block *block) {
+    FILE *f = fopen("save.sav", "wb");
+    fwrite(&block->shape, sizeof(int), 1, f);
+    fwrite(&block->orientation, sizeof(int), 1, f);
+    fwrite(&block->y, sizeof(int), 1, f);
+    fwrite(&block->x, sizeof(int), 1, f);
+    fwrite(&block->color, sizeof(tetris_color), 1, f);
+    fwrite(&game->level, sizeof(int), 1, f);
+    fwrite(&game->score, sizeof(int), 1, f);
+    fwrite(&game->tick_period, sizeof(int), 1, f);
+    fwrite(&game->next_shape, sizeof(int), 1, f);
+    fwrite(&game->next_orientation, sizeof(int), 1, f);
+    fwrite(&game->next_color, sizeof(tetris_color), 1, f);
+    for (int i = 0; i < NUM_OF_ROWS; i++) {
+        for (int j = 0; j < NUM_OF_COLS; j++) {
+            fwrite(&game->board[i][j], sizeof(int), 1, f);
+        }
+    }
+}
+
+void t_load_game(tetris_game *game, tetris_block *block) {
+    FILE *f = fopen("save.sav", "rb");
+    fread(&block->shape, sizeof(int), 1, f);
+    fread(&block->orientation, sizeof(int), 1, f);
+    fread(&block->y, sizeof(int), 1, f);
+    fread(&block->x, sizeof(int), 1, f);
+    fread(&block->color, sizeof(tetris_color), 1, f);
+    fread(&game->level, sizeof(int), 1, f);
+    fread(&game->score, sizeof(int), 1, f);
+    fread(&game->tick_period, sizeof(int), 1, f);
+    fread(&game->next_shape, sizeof(int), 1, f);
+    fread(&game->next_orientation, sizeof(int), 1, f);
+    fread(&game->next_color, sizeof(tetris_color), 1, f);
+    for (int i = 0; i < NUM_OF_ROWS; i++) {
+        for (int j = 0; j < NUM_OF_COLS; j++) {
+            fread(&game->board[i][j], sizeof(int), 1, f);
+        }
+    }
+}
+
 int accumulate(int number) {
     if (number <= 0) { return 1; }
     int sum = 0;

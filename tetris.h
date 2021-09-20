@@ -99,5 +99,9 @@ int t_is_game_over(tetris_game *game);
 
 void t_destroy_block(tetris_block *block);
 
+void t_save_game(tetris_game *game, tetris_block *block);
+
+void t_load_game(tetris_game *game, tetris_block *block);
+
 #endif //TETRIS_TETRIS_H
 
