@@ -1,8 +1,11 @@
-#include <malloc.h>
 #include <curses.h>
 #include <unistd.h>
 #include "tetris.h"
 #include <menu.h>
+
+#define MINIAUDIO_IMPLEMENTATION
+
+#include "miniaudio.h"
 
 typedef struct {
     char *title;
@@ -29,6 +32,10 @@ void show_menu(tetris_game *game, tetris_block *block, t_menu_item *m_items, int
 
 void msleep(int milliseconds);
 
+void play_music(const char *filename);
+
+void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_uint32 frameCount);
+
 int running = 1;
 int game_over = 0;
 int paused = 0;
@@ -36,12 +43,18 @@ WINDOW *tw_main;
 WINDOW *tw_next;
 WINDOW *tw_score;
 
+ma_decoder decoder;
+ma_device device;
+
 int main(int argc, char *argv[]) {
     init_ncurses();
     init_windows();
+    play_music("tetris.mp3");
     if (argc > 1) game(argv[1]);
     else game(NULL);
     destroy_ncurses();
+    ma_device_uninit(&device);
+    ma_decoder_uninit(&decoder);
     return 0;
 }
 
@@ -235,11 +248,47 @@ void stop_game(tetris_game *game, tetris_block *block) {
 }
 
 void print_rules(WINDOW *win) {
-    mvwprintw(win, 3, 1, "space: pause");
+    mvwprintw(win, 1, 1, "space: pause");
     mvwprintw(win, 2, 1, "s: save game");
-    mvwprintw(win, 1, 1, "q: quit");
+    mvwprintw(win, 3, 1, "q: quit");
 }
 
 void msleep(int milliseconds) {
     usleep(milliseconds * 1000);
+}
+
+void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_uint32 frameCount) {
+    ma_bool32 isLooping = MA_TRUE;
+    ma_decoder *pDecoder = (ma_decoder *) pDevice->pUserData;
+    if (pDecoder == NULL) {
+        return;
+    }
+    ma_data_source_read_pcm_frames(pDecoder, pOutput, frameCount, NULL, isLooping);
+    (void) pInput;
+}
+
+void play_music(const char *filename) {
+    ma_result result;
+    ma_device_config deviceConfig;
+
+    result = ma_decoder_init_file(filename, NULL, &decoder);
+    if (result != MA_SUCCESS) { return; }
+
+    deviceConfig = ma_device_config_init(ma_device_type_playback);
+    deviceConfig.playback.format = decoder.outputFormat;
+    deviceConfig.playback.channels = decoder.outputChannels;
+    deviceConfig.sampleRate = decoder.outputSampleRate;
+    deviceConfig.dataCallback = data_callback;
+    deviceConfig.pUserData = &decoder;
+
+    if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
+        ma_decoder_uninit(&decoder);
+        return;
+    }
+
+    if (ma_device_start(&device) != MA_SUCCESS) {
+        ma_device_uninit(&device);
+        ma_decoder_uninit(&decoder);
+        return;
+    }
 }
