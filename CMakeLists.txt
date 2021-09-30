@@ -5,6 +5,8 @@ set(CMAKE_C_STANDARD 99)
 
 set(SRC main.c tetris.c)
 
+#add_compile_definitions(AUDIO)
+
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 

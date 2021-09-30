@@ -1,5 +1,5 @@
 CC ?= gcc
-LIBS = -lncurses -lmenu
+LIBS = -lncurses -lmenu -lpthread -lm -ldl
 
 SRC = main.c tetris.c
 
@@ -11,7 +11,7 @@ OBJS := $(addprefix $(OBJDIR)/,$(SRC:.c=.o))
 all: tetris
 
 $(OBJDIR)/%.o: %.c
-	$(CC) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(OBJS): | $(OBJDIR)
 

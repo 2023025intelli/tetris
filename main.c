@@ -1,11 +1,13 @@
 #include <curses.h>
 #include <unistd.h>
-#include "tetris.h"
 #include <menu.h>
+#include <malloc.h>
+#include "tetris.h"
 
+#ifdef AUDIO
 #define MINIAUDIO_IMPLEMENTATION
-
 #include "miniaudio.h"
+#endif
 
 typedef struct {
     char *title;
@@ -32,9 +34,11 @@ void show_menu(tetris_game *game, tetris_block *block, t_menu_item *m_items, int
 
 void msleep(int milliseconds);
 
+#ifdef AUDIO
 void play_music(const char *filename);
 
 void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_uint32 frameCount);
+#endif
 
 int running = 1;
 int game_over = 0;
@@ -43,18 +47,24 @@ WINDOW *tw_main;
 WINDOW *tw_next;
 WINDOW *tw_score;
 
+#ifdef AUDIO
 ma_decoder decoder;
 ma_device device;
+#endif
 
 int main(int argc, char *argv[]) {
     init_ncurses();
     init_windows();
+#ifdef AUDIO
     play_music("tetris.mp3");
+#endif
     if (argc > 1) game(argv[1]);
     else game(NULL);
     destroy_ncurses();
+#ifdef AUDIO
     ma_device_uninit(&device);
     ma_decoder_uninit(&decoder);
+#endif
     return 0;
 }
 
@@ -257,6 +267,7 @@ void msleep(int milliseconds) {
     usleep(milliseconds * 1000);
 }
 
+#ifdef AUDIO
 void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_uint32 frameCount) {
     ma_bool32 isLooping = MA_TRUE;
     ma_decoder *pDecoder = (ma_decoder *) pDevice->pUserData;
@@ -292,3 +303,4 @@ void play_music(const char *filename) {
         return;
     }
 }
+#endif
